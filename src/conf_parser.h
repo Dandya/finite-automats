@@ -8,7 +8,7 @@
 namespace atmt {
 
 class ConfigParser {
- protected:	
+ protected:
 	std::ifstream in_;
 
  public:

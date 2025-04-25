@@ -44,7 +44,7 @@ struct RsData {
 struct RsConfigParser : public ConfigParser {
 	RsConfigParser(const std::filesystem::path& file):
 			ConfigParser(file) {}
-	
+
 	std::shared_ptr<RsData> Parse(const std::filesystem::path& dir);
 };
 

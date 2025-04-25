@@ -1,0 +1,3 @@
+[submodule "contrib/matrix"]
+	path = contrib/matrix
+	url = https://github.com/mlcpp/Matrix.git

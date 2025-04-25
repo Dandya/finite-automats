@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/automats.dir/src/main.cpp.o CMakeFiles/automats.dir/src/rs_atmt.cpp.o -o automats 

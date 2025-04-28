@@ -31,8 +31,9 @@ InitialSigHandler() {
 }
 
 std::uint32_t
-InputStartElmRs(std::size_t len, std::istream_iterator<std::uint32_t>& in) {
+InputElmRs(std::size_t len) {
 	std::uint32_t res = 0;
+	std::istream_iterator<std::uint32_t> in(std::cin);
 	for (std::size_t i = 0; i < len; ++i) {
 		res |= static_cast<bool>(*in) << (len - 1 - i);
 		if (i != len - 1)
@@ -44,9 +45,9 @@ InputStartElmRs(std::size_t len, std::istream_iterator<std::uint32_t>& in) {
 }
 
 atmt::Matrix
-InputElmLin(std::size_t len, std::uint32_t q,
-		std::istream_iterator<std::uint32_t>& in) {
+InputElmLin(std::size_t len, std::uint32_t q) {
 	std::vector<std::uint32_t> res;
+	std::istream_iterator<std::uint32_t> in(std::cin);
 	res.resize(len);
 	for (std::size_t i = 0; i < len; ++i) {
 		res[i] = *in % q;
@@ -79,15 +80,11 @@ main(int argc, char** argv) {
 			atmt::RsConfigParser parser(argv[2]);
 			auto data = parser.Parse(argv[3]);
 			std::cout << "Input start value with len (" << data->n << "): ";
-			std::istream_iterator<std::uint32_t> in(std::cin);
-			rs_atmt.Init(data, InputStartElmRs(data->n, in));
+			rs_atmt.Init(data, InputElmRs(data->n));
 			rs_atmt.PrintElm();
 			while (true) {
 				std::cout  << "Input x: ";
-				in++;
-				if (std::cin.fail())
-					throw std::runtime_error("bad input");
-				rs_atmt.Next(*in);
+				rs_atmt.Next(InputElmRs(1));
 				rs_atmt.PrintElm();
 				rs_atmt.PrintOut();
 			}
@@ -96,15 +93,14 @@ main(int argc, char** argv) {
 			atmt::LinConfigParser parser(argv[2]);
 			auto data = parser.Parse();
 			std::cout << "Input start value with len (" << data->A.Row() << "): ";
-			std::istream_iterator<std::uint32_t> in(std::cin);
 			lin_atmt.Init(data,
-					atmt::Matrix(InputElmLin(data->A.Row(), data->q, in)));
+					atmt::Matrix(InputElmLin(data->A.Row(), data->q)));
 			lin_atmt.PrintElm();
 			std::size_t len_x = data->B.Row();
 			std::size_t q = data->q;
 			while (true) {
 				std::cout  << "Input x: ";
-				lin_atmt.Next(InputElmLin(len_x, q, in));
+				lin_atmt.Next(InputElmLin(len_x, q));
 				lin_atmt.PrintElm();
 				lin_atmt.PrintOut();
 			}

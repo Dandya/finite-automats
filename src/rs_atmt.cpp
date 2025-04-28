@@ -88,9 +88,10 @@ RsAutomat::Next(const In& in) {
 	auto offset = [](Elm elm, In in) -> std::size_t {
 		return static_cast<std::size_t>(elm) * 2 + static_cast<std::size_t>(in);
 	};
-	elm_ = ((elm_ << 1) | data_->y[offset(elm_, in)]) & mask_;
+	bool y_out = data_->y[offset(elm_, in)];
+	last_out_ = data_->g[offset(elm_,y_out)];
+	elm_ = ((elm_ << 1) | y_out) & mask_;
 	last_in_ = in;
-	last_out_ = data_->g[offset(elm_,in)];
 }
 
 void

@@ -53,20 +53,25 @@ LinConfigParser::Parse() {
 
 void
 LinAutomat::Next(const In& in) {
-	auto print_size = [](const char* text, const Matrix& m) {
-		std::cout << text << m.Row() << "x" << m.Column() << "\n";
-	};
-	print_size("elm: ", elm_);
-	print_size("in: ", in);
-	print_size("A: ", data_->A);
-	print_size("B: ", data_->B);
-	print_size("C: ", data_->C);
-	print_size("D: ", data_->D);
-	auto res = (elm_ * data_->C);
-	print_size("res: ", res);
-	res = (in * data_->D);
-	print_size("res: ", res);
-	
+	// auto print_size = [](const char* text, const Matrix& m) {
+	// 	std::cout << text << m.Row() << "x" << m.Column() << "\n";
+	// };
+	// print_size("elm: ", elm_);
+	// print_size("in: ", in);
+	// print_size("A: ", data_->A);
+	// print_size("B: ", data_->B);
+	// print_size("C: ", data_->C);
+	// print_size("D: ", data_->D);
+	// auto res = (elm_ * data_->C);
+	// print_size("res: ", res);
+	// res = (in * data_->D);
+	// print_size("res: ", res);
+	// std::cout << "Deb\n";
+	// (elm_ * data_->A).Print();
+	// (in * data_->B).Print();
+	// (elm_ * data_->C).Print();
+	// (in * data_->D).Print();
+	// std::cout << "debend\n";
 	// print_size("elm: ", elm_);
 	last_out_ = (elm_ * data_->C) + (in * data_->D);
 	elm_ = (elm_ * data_->A) + (in * data_->B);

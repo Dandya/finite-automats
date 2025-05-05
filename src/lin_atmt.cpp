@@ -6,14 +6,14 @@
 
 namespace atmt {
 
-void
-Matrix::Print() const {
-	for (std::size_t i = 0; i < r_; ++i) {
-		for (std::size_t j = 0; j < c_; ++j)
-			std::cout << data_[i * c_ + j] << " ";
-		std::cout << "\n";
-	}
-}
+// void
+// Matrix::Print() const {
+// 	for (std::size_t i = 0; i < r_; ++i) {
+// 		for (std::size_t j = 0; j < c_; ++j)
+// 			std::cout << data_[i * c_ + j] << " ";
+// 		std::cout << "\n";
+// 	}
+// }
 
 std::shared_ptr<LinData>
 LinConfigParser::Parse() {
@@ -35,14 +35,12 @@ LinConfigParser::Parse() {
 	std::cout << "k: " << k << "\n";
 	auto read_matrix =
 			[&values] (std::size_t r, std::size_t c, std::uint32_t q, Matrix& mtx) {
-		std::vector<std::uint32_t> mtx_data;
+		mtx.resize(r, c);
 		std::size_t count = r * c;
-		mtx_data.resize(count);
 		for (std::size_t i = 0; i < count; ++i) {
-			mtx_data[i] = *values % q;
+			mtx.data()[i] = *values % q;
 			values++;
 		}
-		mtx = Matrix(mtx_data, r, c, q);
 	};
 	read_matrix(n, n, data->q, data->A);
 	read_matrix(m, n, data->q, data->B);
@@ -53,41 +51,23 @@ LinConfigParser::Parse() {
 
 void
 LinAutomat::Next(const In& in) {
-	// auto print_size = [](const char* text, const Matrix& m) {
-	// 	std::cout << text << m.Row() << "x" << m.Column() << "\n";
-	// };
-	// print_size("elm: ", elm_);
-	// print_size("in: ", in);
-	// print_size("A: ", data_->A);
-	// print_size("B: ", data_->B);
-	// print_size("C: ", data_->C);
-	// print_size("D: ", data_->D);
-	// auto res = (elm_ * data_->C);
-	// print_size("res: ", res);
-	// res = (in * data_->D);
-	// print_size("res: ", res);
-	// std::cout << "Deb\n";
-	// (elm_ * data_->A).Print();
-	// (in * data_->B).Print();
-	// (elm_ * data_->C).Print();
-	// (in * data_->D).Print();
-	// std::cout << "debend\n";
-	// print_size("elm: ", elm_);
-	last_out_ = (elm_ * data_->C) + (in * data_->D);
-	elm_ = (elm_ * data_->A) + (in * data_->B);
+	std::uint32_t q = data_->q;
+	auto mod = [&q](std::uint64_t val) {
+		return val % q;
+	};
+	last_out_ = ((elm_ * data_->C) + (in * data_->D)).unaryExpr(mod);
+	elm_ = ((elm_ * data_->A) + (in * data_->B)).unaryExpr(mod);
 	last_in_ = in;
 }
 
 void
 LinAutomat::PrintElm() {
-	std::cout << "Element:\n";
-	elm_.Print();
+	std::cout << "Element:\n" << elm_ << '\n';
 }
 
 void
 LinAutomat::PrintOut() {
-	std::cout << "Out:\n";
-	last_out_.Print();
+	std::cout << "Out:\n" << last_out_ << '\n';
 }
 
 }

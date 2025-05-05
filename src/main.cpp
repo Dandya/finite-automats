@@ -46,17 +46,16 @@ InputElmRs(std::size_t len) {
 
 atmt::Matrix
 InputElmLin(std::size_t len, std::uint32_t q) {
-	std::vector<std::uint32_t> res;
 	std::istream_iterator<std::uint32_t> in(std::cin);
-	res.resize(len);
+	atmt::Matrix mtx(1, len);
 	for (std::size_t i = 0; i < len; ++i) {
-		res[i] = *in % q;
+		mtx.data()[i] = *in % q;
 		if (i != len - 1)
 			in++;
 		if (std::cin.fail())
 			throw std::runtime_error("bad input");
 	}
-	return atmt::Matrix(std::move(res), 1, len, q);
+	return mtx;
 }
 
 int
@@ -92,11 +91,11 @@ main(int argc, char** argv) {
 		} else if (argv[1] == "lin"s) {
 			atmt::LinConfigParser parser(argv[2]);
 			auto data = parser.Parse();
-			std::cout << "Input start value with len (" << data->A.Row() << "): ";
+			std::cout << "Input start value with len (" << data->A.rows() << "): ";
 			lin_atmt.Init(data,
-					atmt::Matrix(InputElmLin(data->A.Row(), data->q)));
+					atmt::Matrix(InputElmLin(data->A.rows(), data->q)));
 			lin_atmt.PrintElm();
-			std::size_t len_x = data->B.Row();
+			std::size_t len_x = data->B.rows();
 			std::size_t q = data->q;
 			while (true) {
 				std::cout  << "Input x: ";

@@ -6,6 +6,8 @@
 #include <vector>
 #include <iostream>
 
+#include <Eigen/Dense>
+
 #include "automat.h"
 #include "conf_parser.h"
 

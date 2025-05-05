@@ -11,6 +11,43 @@
 
 namespace atmt {
 
+// class TMatrix {
+// 	std::size_t size_ = 0;
+// 	std::uint32_t* addr_ = nullptr;
+
+//  public:
+// 	TMatrix() {}
+
+// 	~TMatrix() {
+// 		assert(!addr_);
+// 	}
+
+// 	void Init(const std::filesystem::path& file);
+
+// 	void Delete();
+
+// 	std::uint32_t Get(std::uint32_t elm, bool in);
+// };
+
+
+class EqClasses {
+	std::size_t size_ = 0;
+	std::uint32_t* addr_ = nullptr;
+
+ public:
+	EqClasses() {}
+
+	~EqClasses() {
+		assert(!addr_);
+	}
+
+	void Init(const std::filesystem::path& file);
+
+	void Delete();
+
+	std::uint32_t Get(std::uint32_t elm);
+};
+
 class RsFunction {
 	std::size_t size_ = 0;
 	std::size_t size_b_ = 0;
@@ -74,6 +111,13 @@ class RsAutomat : public Automat<std::uint32_t, bool, bool> {
 	void PrintElm();
 
 	void PrintOut();
+
+	void PrintEquivalenceInfo(const std::filesystem::path& dir);
+
+ private:
+	// std::shared_ptr<TMatrix> CreateTMatrix(const std::filesystem::path& dir);
+	
+	// std::shared_ptr<EqClasses> CreateEqClasses(const std::filesystem::path& dir);
 };
 
 }  // namespace atmt

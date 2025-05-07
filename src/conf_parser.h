@@ -13,7 +13,11 @@ class ConfigParser {
 
  public:
 	ConfigParser(const std::filesystem::path& file) {
-		in_.open(file.filename());
+		if (!std::filesystem::exists(file))
+			throw std::runtime_error(file.string() + "don't exist");
+		in_.open(file);
+		if (in_.fail())
+			throw std::runtime_error("error open config");
 	}
 
 	~ConfigParser() {

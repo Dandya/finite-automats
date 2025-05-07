@@ -8,6 +8,7 @@
 
 #include "automat.h"
 #include "conf_parser.h"
+#include "mmap_file.h"
 
 namespace atmt {
 
@@ -30,52 +31,42 @@ namespace atmt {
 // };
 
 
-class EqClasses {
-	std::size_t size_ = 0;
-	std::uint32_t* addr_ = nullptr;
+//class EqClasses {
+//	std::size_t size_ = 0;
+//	std::tuple<void*, void*, void*> file_;
+//	std::uint32_t* addr_ = nullptr;
+//
+// public:
+//	EqClasses() {}
+//
+//	~EqClasses() {
+//		assert(!addr_);
+//	}
+//
+//	void Init(const std::filesystem::path& file);
+//
+//	void Delete();
+//
+//	std::uint32_t Get(std::uint32_t elm);
+//};
 
- public:
-	EqClasses() {}
-
-	~EqClasses() {
-		assert(!addr_);
-	}
-
-	void Init(const std::filesystem::path& file);
-
-	void Delete();
-
-	std::uint32_t Get(std::uint32_t elm);
-};
-
-class RsFunction {
-	std::size_t size_ = 0;
+class RsFunction : public MmapFile {
 	std::size_t size_b_ = 0;
-	std::uint8_t* addr_ = nullptr;
 
  public:
-	RsFunction() {}
-
-	~RsFunction() {
-		assert(!addr_);
-	}
-
-	void Init(const std::filesystem::path& file);
-
-	void Delete();
+	RsFunction(const std::filesystem::path& file):
+			MmapFile(file), size_b_(size_ << 3) {}
 
 	std::uint8_t operator[](std::size_t offset);
 };
 
 struct RsData {
-	std::size_t n;
+	std::size_t n = 0;
 	RsFunction y;
 	RsFunction g;
 
-	~RsData() {
-		y.Delete();
-		g.Delete();
-	}
+	RsData(std::size_t n, const std::filesystem::path& path_y, const std::filesystem::path& path_g):
+			n(n), y(path_y), g(path_g) {}
 };
 
 struct RsConfigParser : public ConfigParser {
@@ -112,7 +103,7 @@ class RsAutomat : public Automat<std::uint32_t, bool, bool> {
 
 	void PrintOut();
 
-	void PrintEquivalenceInfo(const std::filesystem::path& dir);
+	//void PrintEquivalenceInfo(const std::filesystem::path& dir);
 
  private:
 	// std::shared_ptr<TMatrix> CreateTMatrix(const std::filesystem::path& dir);

@@ -9,25 +9,33 @@
 #include "lin_atmt.h"
 
 struct RunData {
-	atmt::RsAutomat* rs;
+	std::unique_ptr<atmt::RsAutomat> rs;
+	std::unique_ptr<atmt::LinAutomat> lin;
 } run_data;
+
 
 void
 SigHandler(int arg) {
 	if (run_data.rs)
-		run_data.rs->Delete();
+		run_data.rs.reset();
+	if (run_data.lin)
+		run_data.lin.reset();
 	exit(0);
 }
 
 void
 InitialSigHandler() {
-	struct sigaction sigaction_info;
+#ifndef WIN32
+	struct sigaction sigaction_info {};
 	sigaction_info.sa_handler = SigHandler;
 	sigaction_info.sa_flags = SA_RESTART;
 	sigemptyset(&sigaction_info.sa_mask);
 	sigaction(SIGINT, &sigaction_info, NULL);
 	sigaction(SIGTERM, &sigaction_info, NULL);
 	sigaction(SIGHUP, &sigaction_info, NULL);
+#else
+	signal(SIGINT, SigHandler);
+#endif
 }
 
 std::uint32_t
@@ -61,55 +69,54 @@ InputElmLin(std::size_t len, std::uint32_t q) {
 int
 main(int argc, char** argv) {
 	using namespace std::string_literals;
-
+#ifndef WIN32
 	InitialSigHandler();
+#endif
 
 	if (argc < 4) {
 		std::cout << "Usage: " << argv[0] << " TYPE CONF DIR_FOR_FILES\n";
 		return -1;
 	}
-	atmt::RsAutomat rs_atmt;
-	atmt::LinAutomat lin_atmt;
-	auto clean = [&rs_atmt, &lin_atmt]() {
-		rs_atmt.Delete();
-		lin_atmt.Delete();
-	};
+
+	run_data.rs = std::make_unique<atmt::RsAutomat>();
+	run_data.lin = std::make_unique<atmt::LinAutomat>();
 	try {
 		if (argv[1] == "rs"s) {
 			atmt::RsConfigParser parser(argv[2]);
 			auto data = parser.Parse(argv[3]);
 			std::cout << "Input start value with len (" << data->n << "): ";
-			rs_atmt.Init(data, InputElmRs(data->n));
-			rs_atmt.PrintElm();
+			run_data.rs->Init(data, InputElmRs(data->n));
+			run_data.rs->PrintElm();
 			while (true) {
 				std::cout  << "Input x: ";
-				rs_atmt.Next(InputElmRs(1));
-				rs_atmt.PrintElm();
-				rs_atmt.PrintOut();
+				run_data.rs->Next(InputElmRs(1));
+				run_data.rs->PrintElm();
+				run_data.rs->PrintOut();
 			}
-			clean();
+			run_data.rs.reset();
 		} else if (argv[1] == "lin"s) {
 			atmt::LinConfigParser parser(argv[2]);
 			auto data = parser.Parse();
 			std::cout << "Input start value with len (" << data->A.rows() << "): ";
-			lin_atmt.Init(data,
+			run_data.lin->Init(data,
 					atmt::Matrix(InputElmLin(data->A.rows(), data->q)));
-			lin_atmt.PrintElm();
+			run_data.lin->PrintElm();
 			std::size_t len_x = data->B.rows();
 			std::size_t q = data->q;
 			while (true) {
 				std::cout  << "Input x: ";
-				lin_atmt.Next(InputElmLin(len_x, q));
-				lin_atmt.PrintElm();
-				lin_atmt.PrintOut();
+				run_data.lin->Next(InputElmLin(len_x, q));
+				run_data.lin->PrintElm();
+				run_data.lin->PrintOut();
 			}
-			clean();
+			run_data.lin.reset();
 		} else {
 			throw std::runtime_error("unknow automat type");
 		}
 	} catch(std::exception& e) {
 		std::cout << "Error: " << e.what() << "\n";
-		clean();
+		run_data.rs.reset();
+		run_data.lin.reset();
 		return 1;
 	}
 	return 0;

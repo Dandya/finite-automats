@@ -10,6 +10,11 @@
 
 namespace atmt {
 
+enum MmapMode {
+	READ = 0,
+	READ_WRITE = 1
+};
+
 struct MmapFile {
 	std::size_t size_ = 0;
 	void* addr_ = nullptr;
@@ -20,7 +25,7 @@ struct MmapFile {
 	HANDLE fm_ = INVALID_HANDLE_VALUE;
 #endif // !WIN32
 
-	MmapFile(const std::filesystem::path& path);
+	MmapFile(const std::filesystem::path& path, MmapMode mode);
 
 	~MmapFile();
 };

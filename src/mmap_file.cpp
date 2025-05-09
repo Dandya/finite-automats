@@ -3,7 +3,7 @@
 
 namespace atmt {
 
-MmapFile::MmapFile(const std::filesystem::path& path) {
+MmapFile::MmapFile(const std::filesystem::path& path, MmapMode mode) {
 	if (!std::filesystem::is_regular_file(path))
 		throw std::runtime_error(path.string() + " isn't regular file");
 	
@@ -12,11 +12,12 @@ MmapFile::MmapFile(const std::filesystem::path& path) {
 		throw std::runtime_error("file size for mmap equal zero");
 
 #ifndef WIN32
-	fd_ = open(file.c_str(), O_RDONLY);
+	fd_ = open(file.c_str(), (mode = MmapMode::READ ? O_RDONLY : O_RDWR));
 	if (fd_ == -1)
 		throw std::runtime_error("opening file for mmap");
 
-	addr_ = reinterpret_cast<std::uint8_t*>(mmap(NULL, size_, PROT_READ,
+	addr_ = reinterpret_cast<std::uint8_t*>(mmap(NULL, size_, 
+		PROT_READ | (mode = MmapMode::READ_WRITE ? PROT_WRITE : 0),
 		MAP_PRIVATE, fd_, 0));
 	if (addr_ == MAP_FAILED)
 		throw std::runtime_error("mmap failed");
@@ -31,7 +32,8 @@ MmapFile::MmapFile(const std::filesystem::path& path) {
 	};
 
 	fd_ = CreateFileA(path.string().c_str(),
-		GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_READONLY, nullptr);
+		GENERIC_READ | ((mode == MmapMode::READ_WRITE) ? GENERIC_WRITE : 0),
+		0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (fd_ == INVALID_HANDLE_VALUE) {
 		LPTSTR errorText = NULL;
 		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER
@@ -46,13 +48,14 @@ MmapFile::MmapFile(const std::filesystem::path& path) {
 		throw std::runtime_error(err);
 	}
 
-	fm_ = CreateFileMapping(fd_, NULL, PAGE_READONLY, 0, 0, NULL);
+	fm_ = CreateFileMapping(fd_, NULL, ((mode == MmapMode::READ_WRITE) ? PAGE_READWRITE : PAGE_READONLY), 0, 0, NULL);
 	if (fm_ == 0) {
 		close(fd_);
 		throw std::runtime_error("create file mapping");
 	}
 
-	addr_ = MapViewOfFile(fm_, FILE_MAP_READ, 0, 0, 0);
+	addr_ = MapViewOfFile(fm_, ((mode == MmapMode::READ_WRITE) ?
+			FILE_MAP_READ | FILE_MAP_WRITE : FILE_MAP_READ), 0, 0, 0);
 	if (addr_ == nullptr) {
 		close(fm_);
 		close(fd_);

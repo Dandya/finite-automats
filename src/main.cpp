@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <iterator>
+#include <string>
 
 #include "rs_atmt.h"
 #include "lin_atmt.h"
@@ -13,13 +14,21 @@ struct RunData {
 	std::unique_ptr<atmt::LinAutomat> lin;
 } run_data;
 
+void
+DeleteRunData() {
+	if (run_data.rs) {
+		run_data.rs->Delete();
+		run_data.rs.reset();
+	}
+	if (run_data.lin) {
+		run_data.lin->Delete();
+		run_data.lin.reset();
+	}
+}
 
 void
 SigHandler(int arg) {
-	if (run_data.rs)
-		run_data.rs.reset();
-	if (run_data.lin)
-		run_data.lin.reset();
+	DeleteRunData();
 	exit(0);
 }
 
@@ -73,33 +82,40 @@ main(int argc, char** argv) {
 	InitialSigHandler();
 #endif
 
-	if (argc < 4) {
-		std::cout << "Usage: " << argv[0] << " TYPE CONF DIR_FOR_FILES\n";
+	if (argc < 5) {
+		std::cout << "Usage: " << argv[0] << " TYPE CONF DIR_FOR_FILES MODE\n";
 		return -1;
 	}
 
 	run_data.rs = std::make_unique<atmt::RsAutomat>();
 	run_data.lin = std::make_unique<atmt::LinAutomat>();
 	try {
+		int mode = std::stoi(argv[4]);
+		if (mode < 1 || mode > 2)
+			throw std::logic_error("unknown mode");
 		if (argv[1] == "rs"s) {
 			atmt::RsConfigParser parser(argv[2]);
 			auto data = parser.Parse(argv[3]);
-			std::cout << "Input start value with len (" << data->n << "): ";
-			run_data.rs->Init(data, InputElmRs(data->n));
-			run_data.rs->PrintElm();
-			while (true) {
-				std::cout  << "Input x: ";
-				run_data.rs->Next(InputElmRs(1));
+			if (mode == 1) {
+				std::cout << "Input start value with len (" << data->n << "): ";
+				run_data.rs->Init(data, InputElmRs(data->n));
 				run_data.rs->PrintElm();
-				run_data.rs->PrintOut();
+				while (true) {
+					std::cout  << "Input x: ";
+					run_data.rs->Next(InputElmRs(1));
+					run_data.rs->PrintElm();
+					run_data.rs->PrintOut();
+				}
+			} else if (mode == 2) {
+				run_data.rs->Init(data, 0);
+				run_data.rs->PrintEquivalenceInfo(argv[3]);
 			}
-			run_data.rs.reset();
 		} else if (argv[1] == "lin"s) {
 			atmt::LinConfigParser parser(argv[2]);
 			auto data = parser.Parse();
 			std::cout << "Input start value with len (" << data->A.rows() << "): ";
 			run_data.lin->Init(data,
-					atmt::Matrix(InputElmLin(data->A.rows(), data->q)));
+				atmt::Matrix(InputElmLin(data->A.rows(), data->q)));
 			run_data.lin->PrintElm();
 			std::size_t len_x = data->B.rows();
 			std::size_t q = data->q;
@@ -109,15 +125,14 @@ main(int argc, char** argv) {
 				run_data.lin->PrintElm();
 				run_data.lin->PrintOut();
 			}
-			run_data.lin.reset();
 		} else {
 			throw std::runtime_error("unknow automat type");
 		}
 	} catch(std::exception& e) {
 		std::cout << "Error: " << e.what() << "\n";
-		run_data.rs.reset();
-		run_data.lin.reset();
+		DeleteRunData();
 		return 1;
 	}
+	DeleteRunData();
 	return 0;
 }

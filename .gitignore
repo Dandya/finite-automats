@@ -1,4 +1,7 @@
 build/
-func*
+func_*
+classes_*
+tmatrix*
 out/
 .vs/
+CMakeSettings.json

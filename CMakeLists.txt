@@ -9,12 +9,12 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 # add_subdirectory(contrib/eigen Eigen3)
 
 if (CMAKE_SYSTEM MATCHES Windows)
-	add_compile_options(/std:c++17)
+	add_compile_options(/std:c++20)
 else()
 	add_compile_options(-std=c++20 -Wall)
 endif()
 
-set(SOURCES src/main.cpp src/rs_atmt.cpp src/lin_atmt.cpp "src/mmap_file.cpp")
+set(SOURCES src/main.cpp src/rs_atmt.cpp src/lin_atmt.cpp src/mmap_file.cpp)
 
 add_executable(automats ${SOURCES})
 target_include_directories(automats PRIVATE contrib/eigen/)

@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <filesystem>
@@ -12,52 +13,44 @@
 
 namespace atmt {
 
-// class TMatrix {
-// 	std::size_t size_ = 0;
-// 	std::uint32_t* addr_ = nullptr;
+struct TMatrixData {
+	std::array<std::uint32_t, 2> next;
+	std::array<bool, 2> out;
+};
 
-//  public:
-// 	TMatrix() {}
+class TMatrix : public MmapFile {
+ public:
+	TMatrix(const std::filesystem::path& file):
+			MmapFile(file, MmapMode::READ) {}
 
-// 	~TMatrix() {
-// 		assert(!addr_);
-// 	}
-
-// 	void Init(const std::filesystem::path& file);
-
-// 	void Delete();
-
-// 	std::uint32_t Get(std::uint32_t elm, bool in);
-// };
+	TMatrixData Get(std::uint32_t elm) {
+		return reinterpret_cast< TMatrixData*>(addr_)[elm];
+	}
+};
 
 
-//class EqClasses {
-//	std::size_t size_ = 0;
-//	std::tuple<void*, void*, void*> file_;
-//	std::uint32_t* addr_ = nullptr;
-//
-// public:
-//	EqClasses() {}
-//
-//	~EqClasses() {
-//		assert(!addr_);
-//	}
-//
-//	void Init(const std::filesystem::path& file);
-//
-//	void Delete();
-//
-//	std::uint32_t Get(std::uint32_t elm);
-//};
+class EqClasses : public MmapFile {
+public:
+	std::size_t count = 0;
+
+	EqClasses(const std::filesystem::path& file):
+			MmapFile(file, MmapMode::READ_WRITE) {}
+
+	std::uint32_t Get(std::uint32_t elm) {
+		return reinterpret_cast<std::uint32_t*>(addr_)[elm];
+	}
+};
 
 class RsFunction : public MmapFile {
 	std::size_t size_b_ = 0;
 
  public:
 	RsFunction(const std::filesystem::path& file):
-			MmapFile(file), size_b_(size_ << 3) {}
+			MmapFile(file, MmapMode::READ), size_b_(size_ << 3) {}
 
-	std::uint8_t operator[](std::size_t offset);
+	std::uint8_t operator[](std::size_t offset) {
+		return ((reinterpret_cast<std::uint8_t*>(addr_)[(offset >> 3)] >> (offset & 0b111)) & 0b1);
+	}
 };
 
 struct RsData {
@@ -83,10 +76,6 @@ class RsAutomat : public Automat<std::uint32_t, bool, bool> {
  public:
 	RsAutomat() {}
 
-	~RsAutomat() {
-		assert(!data_);
-	}
-
 	void Init(std::shared_ptr<RsData>& data, Elm start) {
 		data_ = data;
 		elm_ = start;
@@ -103,12 +92,16 @@ class RsAutomat : public Automat<std::uint32_t, bool, bool> {
 
 	void PrintOut();
 
-	//void PrintEquivalenceInfo(const std::filesystem::path& dir);
+	void PrintEqualClasses(EqClasses& eq);
+
+	void PrintEquivalenceInfo(const std::filesystem::path& dir);
 
  private:
-	// std::shared_ptr<TMatrix> CreateTMatrix(const std::filesystem::path& dir);
+	std::shared_ptr<TMatrix> CreateTMatrix(const std::filesystem::path& dir);
 	
-	// std::shared_ptr<EqClasses> CreateEqClasses(const std::filesystem::path& dir);
+	std::shared_ptr<EqClasses> CreateEqClasses(const std::filesystem::path& dir, bool fill);
+
+	bool UpdateEqClasses(TMatrix& m, EqClasses& now, EqClasses& next);
 };
 
 }  // namespace atmt

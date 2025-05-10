@@ -89,13 +89,16 @@ main(int argc, char** argv) {
 
 	run_data.rs = std::make_unique<atmt::RsAutomat>();
 	run_data.lin = std::make_unique<atmt::LinAutomat>();
+
 	try {
 		int mode = std::stoi(argv[4]);
 		if (mode < 1 || mode > 2)
 			throw std::logic_error("unknown mode");
+
 		if (argv[1] == "rs"s) {
 			atmt::RsConfigParser parser(argv[2]);
 			auto data = parser.Parse(argv[3]);
+			
 			if (mode == 1) {
 				std::cout << "Input start value with len (" << data->n << "): ";
 				run_data.rs->Init(data, InputElmRs(data->n));
@@ -110,21 +113,29 @@ main(int argc, char** argv) {
 				run_data.rs->Init(data, 0);
 				run_data.rs->PrintEquivalenceInfo(argv[3]);
 			}
+
 		} else if (argv[1] == "lin"s) {
 			atmt::LinConfigParser parser(argv[2]);
 			auto data = parser.Parse();
-			std::cout << "Input start value with len (" << data->A.rows() << "): ";
-			run_data.lin->Init(data,
-				atmt::Matrix(InputElmLin(data->A.rows(), data->q)));
-			run_data.lin->PrintElm();
-			std::size_t len_x = data->B.rows();
-			std::size_t q = data->q;
-			while (true) {
-				std::cout  << "Input x: ";
-				run_data.lin->Next(InputElmLin(len_x, q));
+
+			if (mode == 1) {
+				std::cout << "Input start value with len (" << data->A.rows() << "): ";
+				run_data.lin->Init(data,
+					atmt::Matrix(InputElmLin(data->A.rows(), data->q)));
 				run_data.lin->PrintElm();
-				run_data.lin->PrintOut();
+				std::size_t len_x = data->B.rows();
+				std::size_t q = data->q;
+				while (true) {
+					std::cout  << "Input x: ";
+					run_data.lin->Next(InputElmLin(len_x, q));
+					run_data.lin->PrintElm();
+					run_data.lin->PrintOut();
+				}
+			} else if (mode == 2) {
+				run_data.lin->Init(data, atmt::Matrix(1, data->A.rows()));
+				run_data.lin->PrintEquivalenceInfo();
 			}
+
 		} else {
 			throw std::runtime_error("unknow automat type");
 		}

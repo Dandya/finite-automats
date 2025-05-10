@@ -192,7 +192,7 @@ RsAutomat::UpdateEqClasses(TMatrix& m, EqClasses& now, EqClasses& next) {
 		auto data = m.Get(elm);
 		key.id_next_0 = now.Get(data.next[0]);
 		key.id_next_1 = now.Get(data.next[1]);
-		key.out = (data.out[1] << 8) | data.out[0];
+		key.out = (static_cast<std::uint16_t>(data.out[1]) << 8) | static_cast<std::uint16_t>(data.out[0]);
 		auto iter = new_classes.find(key);
 		if (iter != new_classes.end()) {
 			reinterpret_cast<std::uint32_t*>(next.addr_)[elm] = iter->second;

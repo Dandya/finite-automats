@@ -118,9 +118,10 @@ LinAutomat::PrintEquivalenceInfo() {
 		}
 	}
 	auto count = std::powl(data_->q, rang_k);
+	auto all = std::powl(data_->q, data_->A.rows());
 	std::cout << "Degree of distinctness: " << degree  << '\n';
 	std::cout << "Weight: " << count << '\n';
-	std::cout << "Is minimal: " << (count == 1) << '\n';
+	std::cout << "Is minimal: " << (count == all) << '\n';
 }
 
 }

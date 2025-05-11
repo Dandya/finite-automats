@@ -97,9 +97,10 @@ RsAutomat::PrintEquivalenceInfo(const std::filesystem::path& dir) {
 		if (was_changes)
 			std::swap(classes_next, classes_now);
 	} while (was_changes);
+	auto all = std::powl(2, data_->n);
 	std::cout << "Degree of distinctness: " << degree  << '\n';
 	std::cout << "Weight: " << classes_now->count << '\n';
-	std::cout << "Is minimal: " << (classes_now->count == 1) << '\n';
+	std::cout << "Is minimal: " << (classes_now->count == std::size_t(all)) << '\n';
 }
 
 std::shared_ptr<TMatrix>

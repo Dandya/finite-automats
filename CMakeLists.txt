@@ -11,7 +11,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 if (CMAKE_SYSTEM MATCHES Windows)
 	add_compile_options(/std:c++20)
 else()
-	add_compile_options(-std=c++20 -Wall)
+	add_compile_options(-std=c++20 -Wall -O2)
 endif()
 
 set(SOURCES src/main.cpp src/rs_atmt.cpp src/lin_atmt.cpp src/mmap_file.cpp)

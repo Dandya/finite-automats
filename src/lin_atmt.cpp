@@ -74,15 +74,6 @@ LinAutomat::PrintOut() {
 void
 LinAutomat::PrintEquivalenceInfo() {
 	using MatrixF = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
-	/*Matrix k(2, 2);
-	k << 1, 2,
-		3, 4;
-	std::cout << "k_before: \n" << k << '\n';*/
-	/*MatrixF tmp =*/
-	/*k.resize(2, k.cols() + 2);
-	k.block(0, 1, 2, 2) = tmp;*/
-	//std::cout << "k_after: \n" << convert_to_double() << '\n';
 	std::size_t rang_k = 0;
 	std::size_t degree = 0;
 	std::uint32_t q = data_->q;
@@ -104,7 +95,7 @@ LinAutomat::PrintEquivalenceInfo() {
 		std::size_t offset = data_->C.cols();
 		const std::size_t rows_count = data_->A.rows();
 		for (; degree < rows_count; ++degree) {
-			std::cout << "K_" << degree << ": \n" << k << "\n";
+			//std::cout << "K_" << degree << ": \n" << k << "\n";
 			Matrix tmp = k;
 			k.resize(rows_count, k.cols() + data_->C.cols());
 			k.block(0, 0, rows_count, tmp.cols()) = tmp;

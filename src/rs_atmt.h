@@ -74,6 +74,8 @@ class RsAutomat : public Automat<std::uint32_t, bool, bool> {
 	std::size_t mask_ = 0;
 
  public:
+	 using AdjacencyMatrix = std::vector<std::vector<bool>>;
+
 	RsAutomat() {}
 
 	void Init(std::shared_ptr<RsData>& data, Elm start) {
@@ -96,10 +98,18 @@ class RsAutomat : public Automat<std::uint32_t, bool, bool> {
 
 	void PrintEquivalenceInfo(const std::filesystem::path& dir);
 
+	void Print—onnectivityInfo(const std::filesystem::path& dir);
+
  private:
 	std::shared_ptr<TMatrix> CreateTMatrix(const std::filesystem::path& dir);
 	
 	std::shared_ptr<EqClasses> CreateEqClasses(const std::filesystem::path& dir, bool fill);
+
+	std::shared_ptr<AdjacencyMatrix> CreateDirectedAdjacencyMatrix();
+	std::shared_ptr<AdjacencyMatrix> CreateNotDirectedAdjacencyMatrix(const AdjacencyMatrix& dir_mtrx);
+	void TranspositionAdjacencyMatrix(AdjacencyMatrix& mtrx);
+	bool IsConnectivityAutomat(const AdjacencyMatrix& dir_mtrx);
+	bool IsHighConnectivityAutomat(AdjacencyMatrix& dir_mtrx);
 
 	bool UpdateEqClasses(TMatrix& m, EqClasses& now, EqClasses& next);
 };

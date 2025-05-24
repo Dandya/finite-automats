@@ -92,7 +92,7 @@ main(int argc, char** argv) {
 
 	try {
 		int mode = std::stoi(argv[4]);
-		if (mode < 1 || mode > 2)
+		if (mode < 1 || mode > 3)
 			throw std::logic_error("unknown mode");
 
 		if (argv[1] == "rs"s) {
@@ -112,6 +112,9 @@ main(int argc, char** argv) {
 			} else if (mode == 2) {
 				run_data.rs->Init(data, 0);
 				run_data.rs->PrintEquivalenceInfo(argv[3]);
+			} else if (mode == 3) {
+				run_data.rs->Init(data, 0);
+				run_data.rs->Print—onnectivityInfo(argv[3]);
 			}
 
 		} else if (argv[1] == "lin"s) {

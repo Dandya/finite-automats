@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iterator>
 #include <cmath>
+#include <stack>
+#include <unordered_map>
 
 namespace atmt {
 
@@ -84,7 +86,7 @@ LinAutomat::PrintEquivalenceInfo() {
 	auto convert_to_double = [&k]() -> MatrixF {
 		MatrixF tmp(k.rows(), k.cols());
 		for (std::size_t i = 0; i < k.size(); ++i)
-			tmp.data()[i] = k.data()[i];
+			tmp.data()[i] = static_cast<double>(k.data()[i]);
 		return tmp;
 	};
 	if (!data_->C.isZero()) {
@@ -108,11 +110,152 @@ LinAutomat::PrintEquivalenceInfo() {
 			offset += data_->C.cols();
 		}
 	}
-	auto count = std::powl(data_->q, rang_k);
-	auto all = std::powl(data_->q, data_->A.rows());
+	auto count = std::powl(static_cast<double>(data_->q), rang_k);
+	auto all = std::powl(static_cast<double>(data_->q), data_->A.rows());
 	std::cout << "Degree of distinctness: " << degree  << '\n';
 	std::cout << "Weight: " << count << '\n';
 	std::cout << "Is minimal: " << (count == all) << '\n';
+}
+
+std::shared_ptr<LinAutomat::AdjacencyMatrix>
+LinAutomat::CreateNotDirectedAdjacencyMatrix() {
+	auto pmtrx = std::make_shared<AdjacencyMatrix>();
+	auto& mtrx = *pmtrx;
+	Matrix elm(1, data_->A.rows());
+	Matrix x(1, data_->B.rows());
+	std::memset(elm.data(), 0, data_->A.rows() * sizeof(*elm.data()));
+	std::uint64_t q = data_->q;
+	auto mod = [&q](std::uint64_t val) {
+		return val % q;
+	};
+	auto next = [&q](Matrix& mtrx) -> bool {
+		std::size_t cols = mtrx.cols();
+		for (std::size_t i = 0; i < cols; i++) {
+			mtrx.data()[i] += 1;
+			if (mtrx.data()[i] == q) [[unlikely]] {
+				mtrx.data()[i] = 0;
+				if (i != cols-1) [[likely]]
+					continue;
+				else [[unlikely]]
+					break;
+			} else { [[likely]]
+				return true;
+			}
+		}
+		return false;
+	};
+	do {
+		std::memset(x.data(), 0, data_->B.rows() * sizeof(*x.data()));
+		do {
+			SetElm(elm);
+			Next(x);
+			mtrx[elm][elm_] = true;
+			mtrx[elm_][elm] = true;
+		} while (next(x));
+	} while (next(elm));
+	return pmtrx;
+}
+
+bool
+LinAutomat::IsConnectivityAutomat(AdjacencyMatrix& ndir_mtrx) {
+	std::size_t size = data_->A.rows();
+	std::uint64_t q = data_->q;
+	std::unordered_map<Matrix, bool, MatrixHash> visited;
+	std::stack<Matrix> stack;
+	auto next = [&q](Matrix& mtrx) -> bool {
+		std::size_t cols = mtrx.cols();
+		for (std::size_t i = 0; i < cols; i++) {
+			mtrx.data()[i] += 1;
+			if (mtrx.data()[i] == q) [[unlikely]] {
+				mtrx.data()[i] = 0;
+				if (i != cols-1) [[likely]]
+					continue;
+				else [[unlikely]]
+					break;
+			} else { [[likely]]
+				return true;
+			}
+		}
+		return false;
+		};
+	auto dfs = [&visited, &stack, &ndir_mtrx, &size, &q, &next](const Matrix& elm, std::vector<Matrix>& comp) {
+		comp.push_back(elm);
+		visited[elm] = true;
+		Matrix dst(1, size);
+		std::memset(dst.data(), 0, size * sizeof(*elm.data()));
+		do {
+			if (ndir_mtrx[elm][dst] && !visited[dst])
+				stack.push(dst);
+		} while (next(dst));
+	};
+
+	std::vector<std::vector<Elm>> components;
+	Matrix src(1, size);
+	std::memset(src.data(), 0, size * sizeof(*src.data()));
+	do {
+		if (!visited[src]) {
+			auto& comp = components.emplace_back();
+			dfs(src, comp);
+			while (!stack.empty()) {
+				Elm elm = stack.top();
+				stack.pop();
+				if (!visited[elm])
+					dfs(elm, comp);
+			}
+		}
+	} while (next(src));
+
+	std::cout << "Count of connectivity component: " << components.size() << "\n";
+
+	return components.size() == 1;
+}
+
+bool
+LinAutomat::IsHighConnectivityAutomat() {
+	using MatrixF = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+	std::uint32_t q = data_->q;
+	std::size_t rang_m = 0;
+	std::size_t step = 0;
+	std::size_t n = data_->A.rows();
+	Matrix m = data_->B;
+	Matrix new_part = data_->B;
+	const std::size_t cols_count = data_->A.rows();
+	auto mod = [&q](std::uint64_t val) {
+		return val % q;
+		};
+	auto convert_to_double = [&m]() -> MatrixF {
+		MatrixF tmp(m.rows(), m.cols());
+		for (std::size_t i = 0; i < m.size(); ++i)
+			tmp.data()[i] = static_cast<double>(m.data()[i]);
+		return tmp;
+		};
+	if (!m.isZero()) {
+		for (; step < n; step++) {
+			rang_m = Eigen::ColPivHouseholderQR<MatrixF>(convert_to_double()).rank();
+			if (rang_m == n) {
+				return true;
+			}
+			new_part = (new_part * data_->A).unaryExpr(mod);
+			Matrix tmp = m;
+			std::size_t m_rows_count = m.rows();
+			m.resize(m_rows_count + new_part.rows(), cols_count);
+			m.block(0, 0, new_part.rows(), cols_count) = new_part;
+			m.block(new_part.rows(), 0, m_rows_count, cols_count) = tmp;
+		}
+	}
+	return false;
+}
+
+void
+LinAutomat::Print—onnectivityInfo() {
+	bool is_high_connectivity = IsHighConnectivityAutomat();
+	bool is_connectivity = is_high_connectivity;
+	if (!is_connectivity) {
+		auto p_ndir_mtrx = CreateNotDirectedAdjacencyMatrix();
+		is_connectivity = IsConnectivityAutomat(*p_ndir_mtrx);
+	}
+	std::cout << "Connectivity: " << is_connectivity << "\n";
+	std::cout << "High connectivity: " << is_high_connectivity << "\n";
 }
 
 }

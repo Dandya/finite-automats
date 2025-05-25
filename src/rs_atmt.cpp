@@ -211,6 +211,31 @@ RsAutomat::UpdateEqClasses(TMatrix& m, EqClasses& now, EqClasses& next) {
 	return now.count != next.count;
 }
 
+void PrintAdjacencyMatrix(const RsAutomat::AdjacencyMatrix& mtrx) {
+	std::cout << "Matrix\t";
+	for (RsAutomat::Elm src = 0; src <= mask_; src++)
+		std::cout << src << " ";
+	std::cout << "\n";
+	for (RsAutomat::Elm src = 0; src <= mask_; src++) {
+		std::cout << src << "\t";
+		for (RsAutomat::Elm dst = 0; dst <= mask_; dst++) {
+			std::cout << mtrx[src][dst] << ", ";
+		}
+		std::cout << "\n";
+	}
+}
+
+void PrintConnectivityClasses(const std::vector<std::vector<RsAutomat::Elm>>& classes) {
+	std::cout << "Connectivity\n";
+	for (auto& comp : classes) {
+		std::cout << "Start\n";
+		for (auto& elm : comp) {
+			std::cout << elm << " ";
+		}
+		std::cout << "\nEnd\n";
+	}
+}
+
 std::shared_ptr<RsAutomat::AdjacencyMatrix>
 RsAutomat::CreateDirectedAdjacencyMatrix() {
 	auto pmtrx = std::make_shared<AdjacencyMatrix>();
@@ -245,8 +270,8 @@ RsAutomat::CreateNotDirectedAdjacencyMatrix(const AdjacencyMatrix& dir_mtrx) {
 
 void
 RsAutomat::TranspositionAdjacencyMatrix(AdjacencyMatrix& mtrx) {
-	for (Elm src = 0; src < mask_; src++) {
-		for (Elm dst = 0; dst < src; dst++) {
+	for (Elm src = 0; src <= mask_; src++) {
+		for (Elm dst = 0; dst <= src; dst++) {
 			bool tmp = mtrx[src][dst];
 			mtrx[src][dst] = mtrx[dst][src];
 			mtrx[dst][src] = tmp;
@@ -260,13 +285,13 @@ RsAutomat::IsConnectivityAutomat(const AdjacencyMatrix& dir_mtrx) {
 	auto& ndir_mtrx = *p_ndir_mtrx;
 	auto count = mask_ + 1;
 	std::vector<bool> visited(count, false);
-	std::function<void(Elm, std::vector<RsAutomat::Elm>&)> dfs;
-	dfs = [&dfs, &ndir_mtrx, &count, &visited](Elm elm, std::vector<RsAutomat::Elm>& comp) {
+	std::stack<Elm> stack;
+	auto dfs = [&ndir_mtrx, &count, &visited, &stack](Elm elm, std::vector<RsAutomat::Elm>& comp) {
 		comp.push_back(elm);
 		visited[elm] = true;
 		for (Elm dst = 0; dst < count; dst++) {
 			if (ndir_mtrx[elm][dst] && !visited[dst])
-				dfs(dst, comp);
+				stack.push(dst);
 		}
 	};
 
@@ -275,17 +300,16 @@ RsAutomat::IsConnectivityAutomat(const AdjacencyMatrix& dir_mtrx) {
 		if (!visited[src]) {
 			auto& comp = components.emplace_back();
 			dfs(src, comp);
+			while (!stack.empty()) {
+				Elm elm = stack.top();
+				stack.pop();
+				if (!visited[elm])
+					dfs(elm, comp);
+			}
 		}
 	}
 
-	//std::cout << "Connectivity\n";
-	//for (auto& comp : components) {
-	//	std::cout << "Start\n";
-	//	for (auto& elm : comp) {
-	//		std::cout << elm << " ";
-	//	}
-	//	std::cout << "\nEnd\n";
-	//}
+	std::cout << "Count of connectivity component: " << components.size() << "\n";
 
 	return components.size() == 1;
 }
@@ -296,41 +320,60 @@ RsAutomat::IsHighConnectivityAutomat(AdjacencyMatrix& dir_mtrx) {
 
 	auto count = mask_ + 1;
 	std::vector<bool> visited(count, false);
-	std::stack<Elm> stack;
+	std::stack<Elm> stack_kosaraju;
+	std::stack<Elm> stack_dfs;
 
 	// Kosaraju algorithm
 	std::function<void(Elm)> dfs_dir;
 	std::function<void(Elm, std::vector<RsAutomat::Elm>&)> dfs_inv;
-	dfs_dir = [&dfs_dir, &count, &visited, &stack, &mtrx](Elm elm) {
+	dfs_dir = [&count, &visited, &stack_dfs, &mtrx](Elm elm) {
 		visited[elm] = true;
 		for (Elm dst = 0; dst < count; dst++) {
 			if (mtrx[elm][dst] && !visited[dst])
-				dfs_dir(dst);
+				stack_dfs.push(dst);
 		}
-		stack.push(elm);
 	};
-	dfs_inv = [&dfs_inv, &count, &visited, &mtrx](Elm elm, std::vector<RsAutomat::Elm>& comp) {
+	dfs_inv = [&count, &visited, &stack_dfs, &mtrx](Elm elm, std::vector<RsAutomat::Elm>& comp) {
+		comp.push_back(elm);
 		visited[elm] = true;
-		for (Elm dst = 0; dst < count; dst++) {
-			if (mtrx[elm][dst] && !visited[dst])
-				dfs_inv(dst, comp);
+		for (Elm dst = count; dst != 0; dst--) {
+			if (mtrx[elm][dst-1] && !visited[dst-1])
+				stack_dfs.push(dst-1);
 		}
 	};
 
 	for (Elm src = 0; src < count; src++) {
-		if (!visited[src])
-			dfs_dir(src);
+		if (!visited[src]) {
+			stack_dfs.push(src);
+			while (!stack_dfs.empty()) {
+				Elm elm = stack_dfs.top();
+				if (!visited[elm]) {
+					dfs_dir(elm);
+				}
+				else {
+					stack_dfs.pop();
+					stack_kosaraju.push(elm);
+				}
+			}
+		}
 	}
 
 	std::fill(visited.begin(), visited.end(), false);
 	TranspositionAdjacencyMatrix(mtrx);
 	std::vector<std::vector<RsAutomat::Elm>> components;
-	while (!stack.empty()) {
-		auto elm = stack.top();
-		stack.pop();
+	while (!stack_kosaraju.empty()) {
+		auto elm = stack_kosaraju.top();
+		stack_kosaraju.pop();
 		if (!visited[elm]) {
 			auto& comp = components.emplace_back();
 			dfs_inv(elm, comp);
+			while (!stack_dfs.empty()) {
+				Elm elm = stack_dfs.top();
+				stack_dfs.pop();
+				if (!visited[elm]) {
+					dfs_inv(elm, comp);
+				}
+			}
 		}
 	}
 
@@ -340,25 +383,12 @@ RsAutomat::IsHighConnectivityAutomat(AdjacencyMatrix& dir_mtrx) {
 void 
 RsAutomat::Print—onnectivityInfo(const std::filesystem::path& dir) {
 	auto p_dir_mtrx = CreateDirectedAdjacencyMatrix();
-	//auto p_ndir_mtrx = CreateNotDirectedAdjacencyMatrix(*p_dir_mtrx);
-
-	//std::cout << "Matrix\t";
-	//for (Elm src = 0; src <= mask_; src++)
-	//	std::cout << src << " ";
-	//std::cout << "\n";
-	//for (Elm src = 0; src <= mask_; src++) {
-	//	std::cout << src << "\t";
-	//	for (Elm dst = 0; dst <= mask_; dst++) {
-	//		std::cout << (*p_ndir_mtrx)[src][dst] << " ";
-	//	}
-	//	std::cout << "\n";
-	//}
 
 	bool is_connectivity = IsConnectivityAutomat(*p_dir_mtrx);
+	std::cout << "Connectivity: " << is_connectivity << "\n";
 	bool is_high_connectivity = is_connectivity;
 	if (is_high_connectivity)
 		is_high_connectivity = IsHighConnectivityAutomat(*p_dir_mtrx);
-	std::cout << "Connectivity: " << is_connectivity << "\n";
 	std::cout << "High connectivity: " << is_high_connectivity << "\n";
 }
 

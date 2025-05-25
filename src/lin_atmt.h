@@ -31,11 +31,18 @@ struct LinConfigParser : public ConfigParser {
 	std::shared_ptr<LinData> Parse();
 };
 
+struct MatrixHash {
+	std::size_t operator()(const Matrix& mtrx) const {
+		return std::hash<std::string_view>{}({reinterpret_cast<const char*>(mtrx.data()), mtrx.cols() * sizeof(*mtrx.data())});
+	}
+};
+
 class LinAutomat : public Automat<Matrix, Matrix, Matrix> {
 	std::shared_ptr<LinData> data_;
 
  public:
- LinAutomat() {}
+	using AdjacencyMatrix = std::unordered_map<Matrix, std::unordered_map<Matrix, bool, MatrixHash>, MatrixHash>;
+	LinAutomat() {}
 
 	~LinAutomat() {
 		assert(!data_);
@@ -57,6 +64,13 @@ class LinAutomat : public Automat<Matrix, Matrix, Matrix> {
 	void PrintOut();
 
 	void PrintEquivalenceInfo();
+
+	void Print—onnectivityInfo();
+
+ private:
+	std::shared_ptr<AdjacencyMatrix> CreateNotDirectedAdjacencyMatrix();
+	bool IsConnectivityAutomat(AdjacencyMatrix& dir_mtrx);
+	bool IsHighConnectivityAutomat();
 };
 
 }  // namespace atmt

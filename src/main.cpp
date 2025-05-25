@@ -137,6 +137,9 @@ main(int argc, char** argv) {
 			} else if (mode == 2) {
 				run_data.lin->Init(data, atmt::Matrix(1, data->A.rows()));
 				run_data.lin->PrintEquivalenceInfo();
+			} else if (mode == 3) {
+				run_data.lin->Init(data, atmt::Matrix(1, data->A.rows()));
+				run_data.lin->Print—onnectivityInfo();
 			}
 
 		} else {
